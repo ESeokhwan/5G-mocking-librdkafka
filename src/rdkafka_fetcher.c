@@ -905,8 +905,18 @@ static void rd_kafka_broker_fetch_reply(rd_kafka_t *rk,
         rkb->rkb_fetching = 0;
 
         /* Parse and handle the messages (unless the request errored) */
-        if (!err && reply)
+        if (!err && reply) {
+                // Mock 5G network latency (6ms RTT: 3ms downlink, 3ms uplink).
+                // Since local environments have ~0 RTT, responses are processed instantly.
+                // These artificial sleeps replicate the natural delay of a real network,
+                // preventing the client from flooding the broker with unnatural back-to-back fetches.
+                //
+                // NOTE: When calculating the final response time (E2E latency) in the client metrics,
+                // ensure to explicitly add 3ms to account for this simulated downlink propagation time.
+                usleep(3000);
                 err = rd_kafka_fetch_reply_handle(rkb, reply, request);
+                usleep(3000);
+        }
 
         if (unlikely(err)) {
                 char tmp[128];
