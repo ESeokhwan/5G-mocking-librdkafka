@@ -695,6 +695,7 @@ rd_kafka_msgset_reader_msg_v0_1(rd_kafka_msgset_reader_t *msetr) {
         }
 
         /* Enqueue message on temporary queue */
+        clock_gettime(CLOCK_REALTIME, &(rko->ts));
         rd_kafka_q_enq(&msetr->msetr_rkq, rko);
         msetr->msetr_msgcnt++;
         msetr->msetr_msg_bytes += rkm->rkm_key_len + rkm->rkm_len;
@@ -896,6 +897,7 @@ rd_kafka_msgset_reader_msg_v2(rd_kafka_msgset_reader_t *msetr) {
 
                 rko = rd_kafka_op_new_ctrl_msg(rktp, msetr->msetr_tver->version,
                                                rkbuf, msetr_pos);
+                clock_gettime(CLOCK_REALTIME, &(rko->ts));
                 rd_kafka_q_enq(&msetr->msetr_rkq, rko);
                 msetr->msetr_msgcnt++;
 
@@ -952,6 +954,7 @@ rd_kafka_msgset_reader_msg_v2(rd_kafka_msgset_reader_t *msetr) {
 
 
         /* Enqueue message on temporary queue */
+        clock_gettime(CLOCK_REALTIME, &(rko->ts));
         rd_kafka_q_enq(&msetr->msetr_rkq, rko);
         msetr->msetr_msgcnt++;
         msetr->msetr_msg_bytes += rkm->rkm_key_len + rkm->rkm_len;

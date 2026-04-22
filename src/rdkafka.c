@@ -3287,6 +3287,7 @@ rd_kafka_consume0(rd_kafka_t *rk, rd_kafka_q_t *rkq, int timeout_ms) {
 
         /* Get rkmessage from rko */
         rkmessage = rd_kafka_message_get(rko);
+        rkmessage->ts=rko->ts;
 
         /* Store offset, etc */
         rd_kafka_fetch_op_app_prepare(rk, rko);

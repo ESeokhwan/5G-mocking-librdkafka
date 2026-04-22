@@ -492,9 +492,8 @@ class MessageImpl : public Message {
 
   MessageTimestamp timestamp() const {
     MessageTimestamp ts;
-    rd_kafka_timestamp_type_t tstype;
-    ts.timestamp = rd_kafka_message_timestamp(rkmessage_, &tstype);
-    ts.type      = static_cast<MessageTimestamp::MessageTimestampType>(tstype);
+    ts.timestamp = ((int64_t)(rkmessage_->ts.tv_sec) * 1000) + ((rkmessage_->ts.tv_nsec + 500000) / 1000000);
+    ts.type = MessageTimestamp::MSG_TIMESTAMP_LOG_APPEND_TIME;
     return ts;
   }
 

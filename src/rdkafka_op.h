@@ -297,6 +297,7 @@ struct rd_kafka_op_s {
                                    *   Higher value means higher prio*/
 
         rd_kafka_toppar_t *rko_rktp;
+        struct timespec ts;
 
         /*
          * Generic fields

@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <sys/types.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1488,6 +1489,8 @@ typedef struct rd_kafka_message_s {
                                   *  - dr_msg_cb:
                                   *    msg_opaque from produce() call or
                                   *    RD_KAFKA_V_OPAQUE from producev(). */
+        struct timespec ts;      /**< Consumer:
+                                  *  - Exact time when the message was fetched. */
 } rd_kafka_message_t;
 
 
