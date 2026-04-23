@@ -1,6 +1,9 @@
 librdkafka - the Apache Kafka C/C++ client library
 ==================================================
 
+> **IMPORTANT: Custom Version for 5G Edge Network Simulation**
+> This is a **customized version** of `librdkafka` that includes modifications to simulate **5G edge network** behaviors. It is maintained and used for research on edge-native data streaming.
+
 Copyright (c) 2012-2022, [Magnus Edenhill](http://www.edenhill.se/).
               2023 [Confluent Inc.](https://www.confluent.io/).
 
