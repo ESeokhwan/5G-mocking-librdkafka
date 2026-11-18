@@ -40,3 +40,10 @@ For more complex uses, see:
  * [alter_consumer_group_offsets.c](alter_consumer_group_offsets.c) - Alter offsets of a consumer group.
  * [incremental_alter_configs.c](incremental_alter_configs.c) - Incrementally alter resource configurations.
  * [user_scram.c](user_scram.c) - Describe or alter user SCRAM credentials.
+
+## Global Sequence Fetch
+
+`global_sequence_fetch.c` reads one page using the C API;
+`global_sequence_consumer.cpp` shows UUID-pinned pagination through
+`RdKafka::Handle::c_ptr()`. These require the Kafka GST fork's API 98.
+See [usage and protocol contracts](../GLOBAL_SEQUENCE_FETCH.md).

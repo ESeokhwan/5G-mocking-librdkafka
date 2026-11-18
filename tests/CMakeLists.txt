@@ -158,6 +158,21 @@ add_test(NAME RdKafkaTestInParallel COMMAND test-runner -p5)
 add_test(NAME RdKafkaTestSequentially COMMAND test-runner -p1)
 add_test(NAME RdKafkaTestBrokerLess COMMAND test-runner -p5 -l)
 
+# Independent wire fixtures exercise API 98 through the public C interface.
+# ctypes requires a shared library; Python is optional for ordinary builds.
+if(NOT RDKAFKA_BUILD_STATIC)
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  if(Python3_Interpreter_FOUND)
+    add_test(NAME GlobalSequenceFetch
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/global_sequence_mock.py
+              $<TARGET_FILE:rdkafka>)
+    if(RDKAFKA_BUILD_EXAMPLES)
+      set_tests_properties(GlobalSequenceFetch PROPERTIES ENVIRONMENT
+        "GST_C_EXAMPLE=$<TARGET_FILE:global_sequence_fetch>;GST_CPP_EXAMPLE=$<TARGET_FILE:global_sequence_consumer>")
+    endif()
+  endif()
+endif()
+
 if(NOT WIN32 AND NOT APPLE)
   set(tests_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   add_subdirectory(interceptor_test)

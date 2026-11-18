@@ -120,8 +120,9 @@
 #define RD_KAFKAP_GetTelemetrySubscriptions    71
 #define RD_KAFKAP_PushTelemetry                72
 #define RD_KAFKAP_AssignReplicasToDirs         73
+#define RD_KAFKAP_FetchGlobalSequence          98
 
-#define RD_KAFKAP__NUM 74
+#define RD_KAFKAP__NUM 99
 
 
 #endif /* _RDKAFKA_PROTOCOL_H_ */

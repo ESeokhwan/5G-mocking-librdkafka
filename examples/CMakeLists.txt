@@ -11,6 +11,13 @@ target_link_libraries(producer_cpp PUBLIC rdkafka++)
 add_executable(consumer consumer.c ${win32_sources})
 target_link_libraries(consumer PUBLIC rdkafka)
 
+add_executable(global_sequence_consumer global_sequence_consumer.cpp)
+target_compile_features(global_sequence_consumer PRIVATE cxx_std_11)
+target_link_libraries(global_sequence_consumer PRIVATE rdkafka++ rdkafka)
+
+add_executable(global_sequence_fetch global_sequence_fetch.c)
+target_link_libraries(global_sequence_fetch PRIVATE rdkafka)
+
 add_executable(rdkafka_performance rdkafka_performance.c ${win32_sources})
 target_link_libraries(rdkafka_performance PUBLIC rdkafka)
 

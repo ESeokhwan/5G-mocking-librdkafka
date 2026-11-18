@@ -1,7 +1,7 @@
 EXAMPLES ?= rdkafka_example rdkafka_performance rdkafka_example_cpp \
 	rdkafka_complex_consumer_example rdkafka_complex_consumer_example_cpp \
 	kafkatest_verifiable_client \
-	producer consumer idempotent_producer transactions \
+	producer consumer global_sequence_consumer global_sequence_fetch idempotent_producer transactions \
 	delete_records \
 	openssl_engine_example_cpp \
 	list_consumer_groups \
@@ -51,6 +51,14 @@ producer_cpp: ../src-cpp/librdkafka++.a ../src/librdkafka.a producer.cpp
 		../src-cpp/librdkafka++.a ../src/librdkafka.a $(LIBS)
 
 consumer: ../src/librdkafka.a consumer.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $@.c -o $@ $(LDFLAGS) \
+		../src/librdkafka.a $(LIBS)
+
+global_sequence_consumer: ../src-cpp/librdkafka++.a ../src/librdkafka.a global_sequence_consumer.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I../src -std=c++11 $@.cpp -o $@ $(LDFLAGS) \
+		../src-cpp/librdkafka++.a ../src/librdkafka.a $(LIBS)
+
+global_sequence_fetch: ../src/librdkafka.a global_sequence_fetch.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $@.c -o $@ $(LDFLAGS) \
 		../src/librdkafka.a $(LIBS)
 

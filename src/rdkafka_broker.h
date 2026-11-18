@@ -127,6 +127,8 @@ struct rd_kafka_broker_s { /* rd_kafka_broker_t */
         rd_kafka_cgrp_t *rkb_cgrp;
 
         rd_ts_t rkb_ts_fetch_backoff;
+        rd_ts_t rkb_ts_global_sequence_throttle; /**< API 98 client throttle
+                                                 *   deadline, broker lock. */
         int rkb_fetching;
 
         rd_kafka_broker_state_t rkb_state; /**< Current broker state */

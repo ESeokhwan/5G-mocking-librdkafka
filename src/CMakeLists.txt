@@ -53,6 +53,7 @@ set(
     rdkafka_mock_cgrp.c
     rdkafka_error.c
     rdkafka_fetcher.c
+    rdkafka_global_sequence.c
     rdkafka_telemetry.c
     rdkafka_telemetry_decode.c
     rdkafka_telemetry_encode.c

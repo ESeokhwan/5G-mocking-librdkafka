@@ -100,6 +100,7 @@ struct rd_kafkap_reshdr {
 static RD_UNUSED const char *rd_kafka_ApiKey2str(int16_t ApiKey) {
         static const char *names[] = {
             [RD_KAFKAP_Produce]                 = "Produce",
+            [RD_KAFKAP_FetchGlobalSequence]     = "FetchGlobalSequence",
             [RD_KAFKAP_Fetch]                   = "Fetch",
             [RD_KAFKAP_ListOffsets]             = "ListOffsets",
             [RD_KAFKAP_Metadata]                = "Metadata",

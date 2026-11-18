@@ -90,6 +90,11 @@ transactions: $(BIN)
 unit: $(BIN)
 	TESTS=0000 ./run-test.sh -p1
 
+# Override GST_LIBRARY for CMake or platforms with a different shared suffix.
+GST_LIBRARY ?= $(firstword $(wildcard ../src/librdkafka.dylib ../src/librdkafka.so))
+global-sequence:
+	python3 global_sequence_mock.py $(GST_LIBRARY)
+
 
 # Delete all test topics (based on prefix)
 delete_topics:

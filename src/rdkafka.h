@@ -10633,6 +10633,113 @@ rd_kafka_error_t *rd_kafka_abort_transaction(rd_kafka_t *rk, int timeout_ms);
 
 /**@}*/
 
+/**
+ * @name Global Sequence Fetch (Kafka GST fork extension)
+ * @{
+ * Stateless, bounded, one-page reads using API key 98, flexible versions 0-1.
+ * These types are experimental extensions of this fork.
+ */
+typedef struct rd_kafka_global_sequence_page_s rd_kafka_global_sequence_page_t;
+
+/** Initialize with rd_kafka_global_sequence_fetch_options_init(). */
+typedef struct rd_kafka_global_sequence_fetch_options_s {
+        int32_t max_batches; /**< 1..1000, default 100. */
+        int32_t max_bytes;   /**< 1..16646144, default 1048576. Soft limit:
+                              *   one complete first batch may exceed it. */
+        int isolation_level; /**< 0: read_uncommitted (default),
+                              *   1: read_committed (requires API v1). */
+        int check_crcs;      /**< Verify batch CRC32C, default 1.
+                              *   Independent of partition check.crcs. */
+} rd_kafka_global_sequence_fetch_options_t;
+
+/** A selected record. All pointers are owned by its page. NULL key/payload
+ *  means Kafka null; a non-NULL pointer with size 0 means empty bytes. */
+typedef struct rd_kafka_global_sequence_record_s {
+        int64_t global_offset;
+        int32_t physical_partition;
+        int64_t physical_offset;
+        int32_t leader_epoch; /**< Source batch epoch, or -1 if unknown. */
+        int64_t timestamp;
+        rd_kafka_timestamp_type_t timestamp_type;
+        const void *key;
+        size_t key_len;
+        const void *payload;
+        size_t len;
+        const rd_kafka_headers_t *headers;
+} rd_kafka_global_sequence_record_t;
+
+/** Page state, owned by the page. An error describes the first unprocessed
+ *  position, and may accompany valid records. has_snapshot=0 marks an early
+ *  broker error; next_global_offset is then normalized to the requested start.
+ *  Snapshot coordinates are meaningful only when has_snapshot=1. */
+typedef struct rd_kafka_global_sequence_page_info_s {
+        const rd_kafka_Uuid_t *topic_id;
+        const rd_kafka_Uuid_t *index_topic_id;
+        int32_t index_partition;
+        int32_t coordinator_leader_epoch;
+        int64_t index_high_watermark;
+        int64_t committed_global_end_offset;
+        int64_t next_global_offset;
+        int transaction_pending;
+        int has_snapshot;
+        int16_t api_version;
+        int32_t throttle_time_ms;
+        rd_kafka_resp_err_t error;
+        const char *error_string;
+} rd_kafka_global_sequence_page_info_t;
+
+RD_EXPORT void rd_kafka_global_sequence_fetch_options_init(
+    rd_kafka_global_sequence_fetch_options_t *options);
+
+/**
+ * @brief Fetch one global page for [start, end_exclusive).
+ *
+ * Resolves the topic name without auto-creation. Pass expected_topic_id=NULL
+ * on the first call, then retain/copy page_info()->topic_id for EVERY
+ * subsequent page and retry to detect deletion/recreation. A zero UUID is
+ * invalid. An expected UUID mismatch returns RD_KAFKA_RESP_ERR__INCONSISTENT.
+ * options=NULL selects defaults. timeout_ms must be positive and covers
+ * metadata, connection, ApiVersions, retries, throttle and decoding. The wire
+ * TimeoutMs is capped at 30000 ms. CRC validation defaults to enabled.
+ *
+ * Works with producer or consumer handles; in C++ pass Handle::c_ptr().
+ * No subscription, assignment, group membership or position commit is used.
+ * The caller must keep rk alive until this call returns.
+ *
+ * @returns NULL and *pagep on a validated response, INCLUDING broker errors
+ *          and partial responses (inspect page_info()->error). Transport and
+ *          metadata failures, unsupported versions, malformed pages and decode
+ *          timeouts return an owned error object and *pagep=NULL. Destroy
+ * errors with rd_kafka_error_destroy(). No cursor is advanced on local errors.
+ *          Retriable failures before any progress may be retried within the
+ *          deadline; a partial response is never automatically retried.
+ *
+ * @remark Free the returned page with rd_kafka_global_sequence_page_destroy().
+ *         Record pointers, headers, UUIDs and strings remain valid until then.
+ *         Do not free individual records or pass them to message_destroy().
+ */
+RD_EXPORT rd_kafka_error_t *rd_kafka_global_sequence_fetch(
+    rd_kafka_t *rk,
+    const char *topic,
+    const rd_kafka_Uuid_t *expected_topic_id,
+    int64_t start,
+    int64_t end_exclusive,
+    const rd_kafka_global_sequence_fetch_options_t *options,
+    rd_kafka_global_sequence_page_t **pagep,
+    int timeout_ms);
+
+RD_EXPORT const rd_kafka_global_sequence_page_info_t *
+rd_kafka_global_sequence_page_info(const rd_kafka_global_sequence_page_t *page);
+
+RD_EXPORT const rd_kafka_global_sequence_record_t *
+rd_kafka_global_sequence_page_records(
+    const rd_kafka_global_sequence_page_t *page,
+    size_t *countp);
+
+RD_EXPORT void
+rd_kafka_global_sequence_page_destroy(rd_kafka_global_sequence_page_t *page);
+/**@}*/
+
 /* @cond NO_DOC */
 #ifdef __cplusplus
 }
