@@ -270,12 +270,15 @@ class Broker:
                            'max_bytes': r.int('i'), 'isolation': r.int('b'), 'version': version}
                     r.tags()
                     assert r.p == len(r.b), 'extra or missing request bytes'
-                    assert req['topic'] == self.topic
                     assert 1 <= req['timeout'] <= 30000
                     assert req['isolation'] == 0 or version >= 1
                     self.fetches.append(req)
                     self.stop.wait(self.delay)
-                    payload = self.response(req)
+                    if req['topic'] == self.topic:
+                        payload = self.response(req)
+                    else:
+                        payload = page(topic=req['topic'], index=bytes(16), error=100,
+                                       next_offset=-1, version=version)
                     if payload is None:  # Simulate a transport failure.
                         return
                     header = b'\0'
@@ -433,6 +436,9 @@ class Tests(unittest.TestCase):
             self.assertEqual([r.global_offset for r in records], [3,4])
             self.assertEqual(LIB.rd_kafka_Uuid_most_significant_bits(info.topic_id), 123)
             LIB.rd_kafka_global_sequence_page_destroy(p)
+            apis = [api for api, _ in broker.requests]
+            self.assertIn(3, apis[:apis.index(98)])
+            self.assertEqual(apis[apis.index(98):], [98, 98])
     def test_version_zero(self):
         with Broker(lambda req: page([Mapping()], next_offset=3, version=0), max_version=0) as broker, Client(broker) as client:
             p, info, records = client.fetch()
@@ -455,13 +461,32 @@ class Tests(unittest.TestCase):
                 self.assertFalse(broker.fetches)
     def test_topic_recreation(self):
         with Broker() as broker, Client(broker) as client:
-            expected = LIB.rd_kafka_Uuid_new(9, 9)
-            err, info, _ = client.fetch(expected=expected)
-            LIB.rd_kafka_Uuid_destroy(expected)
+            p, info, _ = client.fetch()
+            self.assertIsNotNone(info, p)
+            expected = LIB.rd_kafka_Uuid_copy(info.topic_id)
+            LIB.rd_kafka_global_sequence_page_destroy(p)
+            broker.topic = OTHER
+            try:
+                err, info, _ = client.fetch(expected=expected)
+            finally:
+                LIB.rd_kafka_Uuid_destroy(expected)
             self.assertIsNone(info)
             self.assertEqual(err[0], -149)
-            self.assertFalse(broker.fetches)
+            self.assertEqual([req['topic'] for req in broker.fetches], [TOPIC, TOPIC])
+            apis = [api for api, _ in broker.requests]
+            self.assertEqual(apis[apis.index(98):], [98, 98, 3])
         self.bad(page(topic=OTHER, committed=0))
+
+    def test_topic_recreation_during_first_fetch(self):
+        def response(req):
+            broker.topic = OTHER
+            return page(topic=req['topic'], index=bytes(16), error=100, next_offset=-1)
+
+        with Broker(response) as broker, Client(broker) as client:
+            err, info, _ = client.fetch()
+            self.assertIsNone(info)
+            self.assertEqual(err[0], -149)
+            self.assertEqual([req['topic'] for req in broker.fetches], [TOPIC])
     def test_read_committed_skips_and_pending(self):
         self.assertEqual(self.good(page(next_offset=3), isolation_level=1)[:3], (3,0,0))
         mappings = [Mapping(1, 0, 10, 1, 1, 2), Mapping(4, 2, 30, 1, 4, 5)]
@@ -542,6 +567,8 @@ class Tests(unittest.TestCase):
             self.assertEqual(len(calls), 4)
             self.assertGreater(calls[1] - calls[0], .015)
             LIB.rd_kafka_global_sequence_page_destroy(p)
+            apis = [api for api, _ in broker.requests]
+            self.assertEqual(apis[apis.index(98):], [98, 3, 98, 3, 98, 98])
     def test_deadlines_and_late_response(self):
         for kwargs in ({'delay': .15}, {'metadata_delay': .15}):
             with self.subTest(kwargs=kwargs), Broker(**kwargs) as broker, Client(broker) as client:

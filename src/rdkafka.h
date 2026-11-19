@@ -10694,10 +10694,12 @@ RD_EXPORT void rd_kafka_global_sequence_fetch_options_init(
 /**
  * @brief Fetch one global page for [start, end_exclusive).
  *
- * Resolves the topic name without auto-creation. Pass expected_topic_id=NULL
- * on the first call, then retain/copy page_info()->topic_id for EVERY
- * subsequent page and retry to detect deletion/recreation. A zero UUID is
- * invalid. An expected UUID mismatch returns RD_KAFKA_RESP_ERR__INCONSISTENT.
+ * Pass expected_topic_id=NULL to resolve the topic name without auto-creation
+ * on the first call. Retain/copy page_info()->topic_id and pass the returned
+ * UUID for the same topic on subsequent pages and retries. A supplied UUID
+ * is used directly. A zero UUID is invalid. If the broker reports an unknown
+ * topic before the page advances, the client resolves the name again. A
+ * different UUID returns RD_KAFKA_RESP_ERR__INCONSISTENT.
  * options=NULL selects defaults. timeout_ms must be positive and covers
  * metadata, connection, ApiVersions, retries, throttle and decoding. The wire
  * TimeoutMs is capped at 30000 ms. CRC validation defaults to enabled.

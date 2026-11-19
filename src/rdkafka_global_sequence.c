@@ -604,9 +604,8 @@ static void gs_backoff(rd_kafka_t *rk, rd_ts_t deadline, int throttle_ms) {
         gs_sleep_until(RD_MIN(deadline, rd_clock() + (rd_ts_t)ms * 1000));
 }
 
-/* Always resolve fresh metadata. No auto-creation and no stale topic-ID cache.
- * DescribeTopics uses the existing Metadata transport/parser and admin
- * deadline. */
+/* Resolve fresh metadata for the initial fetch or to check an unknown topic.
+ * DescribeTopics uses the existing Metadata transport without auto-creation. */
 static rd_kafka_error_t *gs_resolve(rd_kafka_t *rk,
                                     const char *topic,
                                     const rd_kafka_Uuid_t *expected,
@@ -758,9 +757,13 @@ rd_kafka_error_t *rd_kafka_global_sequence_fetch(
                     "Invalid Global Sequence Fetch topic, UUID, range, options "
                     "or timeout");
         deadline = rd_timeout_init(timeout_ms);
-        error = gs_resolve(rk, topic, expected_topic_id, deadline, &topic_id);
-        if (error)
-                return error;
+        if (expected_topic_id)
+                topic_id = *expected_topic_id;
+        else {
+                error = gs_resolve(rk, topic, NULL, deadline, &topic_id);
+                if (error)
+                        return error;
+        }
         while (rd_timeout_remains(deadline) > 0) {
                 rd_kafka_broker_t *rkb;
                 rd_kafka_buf_t *request;
@@ -844,8 +847,9 @@ rd_kafka_error_t *rd_kafka_global_sequence_fetch(
                 if (*pagep) {
                         rd_kafka_global_sequence_page_info_t *info =
                             &(*pagep)->info;
-                        if (!info->error || info->next_global_offset > start ||
-                            !gs_retryable(info->error))
+                        rd_kafka_resp_err_t page_error = info->error;
+                        if (!page_error || info->next_global_offset > start ||
+                            !gs_retryable(page_error))
                                 return NULL;
                         /* Never hide a valid prefix, even if its payload is
                          * empty after read_committed filtering. */
@@ -853,6 +857,17 @@ rd_kafka_error_t *rd_kafka_global_sequence_fetch(
                         rd_kafka_global_sequence_page_destroy(*pagep);
                         *pagep = NULL;
                         gs_backoff(rk, deadline, remains);
+                        if (page_error == RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_ID ||
+                            page_error ==
+                                RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART) {
+                                rd_kafka_Uuid_t resolved_id;
+                                /* Recheck the name without moving this cursor
+                                 * to a different topic incarnation. */
+                                error = gs_resolve(rk, topic, &topic_id,
+                                                   deadline, &resolved_id);
+                                if (error)
+                                        return error;
+                        }
                 } else {
                         if (!gs_retryable(rd_kafka_error_code(error)))
                                 return error;
