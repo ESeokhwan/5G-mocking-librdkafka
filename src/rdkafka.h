@@ -5453,6 +5453,10 @@ void rd_kafka_log_syslog(const rd_kafka_t *rk,
 RD_EXPORT
 int rd_kafka_outq_len(rd_kafka_t *rk);
 
+/** Lifetime count of fully written Produce requests, including retransmits. */
+RD_EXPORT
+uint64_t rd_kafka_produce_requests_sent(rd_kafka_t *rk);
+
 
 
 /**

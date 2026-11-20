@@ -4751,6 +4751,8 @@ static int rd_kafka_broker_thread_main(void *arg) {
 
         if (rkb->rkb_source != RD_KAFKA_INTERNAL) {
                 rd_kafka_wrlock(rkb->rkb_rk);
+                rkb->rkb_rk->rk_retired_produce_requests +=
+                    rd_atomic64_get(&rkb->rkb_c.reqtype[RD_KAFKAP_Produce]);
                 TAILQ_REMOVE(&rkb->rkb_rk->rk_brokers, rkb, rkb_link);
                 if (rkb->rkb_nodeid != -1 && !RD_KAFKA_BROKER_IS_LOGICAL(rkb))
                         rd_list_remove(&rkb->rkb_rk->rk_broker_by_id, rkb);

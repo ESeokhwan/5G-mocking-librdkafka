@@ -288,6 +288,7 @@ struct rd_kafka_s {
         rd_kafka_q_t *rk_ops; /* any -> rdkafka main thread ops */
 
         TAILQ_HEAD(, rd_kafka_broker_s) rk_brokers;
+        uint64_t rk_retired_produce_requests; /**< Protected by rk_lock. */
         rd_list_t rk_broker_by_id; /* Fast id lookups. */
         rd_atomic32_t rk_broker_cnt;
         /**< Number of brokers in state >= UP */

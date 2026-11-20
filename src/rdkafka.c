@@ -4463,6 +4463,18 @@ void *rd_kafka_opaque(const rd_kafka_t *rk) {
 }
 
 
+uint64_t rd_kafka_produce_requests_sent(rd_kafka_t *rk) {
+        rd_kafka_broker_t *rkb;
+        uint64_t count;
+
+        rd_kafka_rdlock(rk);
+        count = rk->rk_retired_produce_requests;
+        TAILQ_FOREACH(rkb, &rk->rk_brokers, rkb_link)
+                count += rd_atomic64_get(&rkb->rkb_c.reqtype[RD_KAFKAP_Produce]);
+        rd_kafka_rdunlock(rk);
+        return count;
+}
+
 int rd_kafka_outq_len(rd_kafka_t *rk) {
         return rd_kafka_curr_msgs_cnt(rk) + rd_kafka_q_len(rk->rk_rep) +
                (rk->rk_background.q ? rd_kafka_q_len(rk->rk_background.q) : 0);
